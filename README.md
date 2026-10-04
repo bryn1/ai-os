@@ -79,4 +79,4 @@ python3 /path/to/agent-town/infra/vm106/repo-visibility-hosting/validate-hosting
 
 ## Repo
 
-`github.com/svarkor-ai/ai-os` — `main` must always be the latest working, truthful state.
+`github.com/bryn1/ai-os` — `main` must always be the latest working, truthful state.
