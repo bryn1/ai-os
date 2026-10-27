@@ -42,8 +42,8 @@ function renderMeta() {
   var tasks = b ? (b.task_count || (b.tasks ? b.tasks.length : 0)) : 0;
   bar.innerHTML =
     '<span class="meta">Tavla: <strong>' + window.Aos.render.escapeHtml(b ? b.label : '—') + '</strong></span>' +
-    '<span class="meta">' + tasks + ' jobb</span>' +
-    '<span class="meta meta--hidden" title="Känsliga projekt filtrerade på servern">' + hidden + ' dolda (känsliga)</span>' +
+    '<span class="meta">' + window.Aos.render.escapeHtml(tasks) + ' jobb</span>' +
+    '<span class="meta meta--hidden" title="Känsliga projekt filtrerade på servern">' + window.Aos.render.escapeHtml(hidden) + ' dolda (känsliga)</span>' +
     '<span class="meta meta--time">Uppdaterad ' + window.Aos.render.escapeHtml(when) + '</span>';
 }
 
