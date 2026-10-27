@@ -72,6 +72,12 @@ function metaHTML(writes) {
   return meta.html;
 }
 
+function panelHTML(writes, id) {
+  const p = writes.filter(w => w.id === id).pop();
+  assert.ok(p, 'shell must write ' + id + ' innerHTML once loaded');
+  return p.html;
+}
+
 test('meta strip escapes a task_count payload — no raw HTML into innerHTML', async () => {
   const writes = await loadShell({
     generated_at: '2026-10-27T17:00:00Z',
@@ -116,4 +122,41 @@ test('meta strip escapes the board label — pins the pre-existing behaviour', a
     'label payload must NOT reach innerHTML raw');
   assert.ok(html.includes('&lt;img src=x onerror=alert(90)&gt;'),
     'label payload must come out escaped');
+});
+
+// ---- MC 11525 Wave B row #7: a malformed-but-valid JSON body must be validated
+// ONCE in load(), before any render call, and land on the EXISTING Swedish error
+// path ("Ingen data." panel + "Kunde inte läsa ögonblicksbilden" meta line) —
+// never a raw English TypeError in the panel, never a silently empty render.
+
+const ENVELOPE_TESTS = [
+  { name: 'tasks:[null] (non-object task entry)', over: { tasks: [null] } },
+  { name: 'tasks:"hello" (tasks not an array)', over: { tasks: 'hello' } },
+  { name: 'task after:"x" (after not an array of strings)', over: { tasks: [{ display_id: '7', after: 'x' }] } },
+];
+
+ENVELOPE_TESTS.forEach(({ name, over }) => {
+  test('malformed envelope ' + name + ' → Swedish error panel, no TypeError, no silent empty', async () => {
+    const writes = await loadShell({
+      generated_at: '2026-10-27T17:00:00Z',
+      boards: [board(over)],
+    });
+    const panel = panelHTML(writes, 'projekt-body');
+    assert.ok(panel.includes('state--error'), 'panel must be the error state, got: ' + panel.slice(0, 120));
+    assert.ok(panel.includes('Ingen data.'), 'panel must show the existing Swedish error copy');
+    assert.ok(!panel.includes('TypeError'), 'no raw engine error may reach the panel');
+    const meta = metaHTML(writes);
+    assert.ok(meta.includes('Kunde inte läsa ögonblicksbilden'), 'meta must carry the Swedish error line');
+    assert.ok(!meta.includes('TypeError'), 'no raw engine error may reach the meta bar');
+  });
+});
+
+test('a valid envelope still renders content — validation must not reject the good path', async () => {
+  const writes = await loadShell({
+    generated_at: '2026-10-27T17:00:00Z',
+    boards: [board({ tasks: [{ display_id: '8', parent_id: null, project_slug: 'p', status: 'queued', after: [], onfail: [], released: false }] })],
+  });
+  const panel = panelHTML(writes, 'projekt-body');
+  assert.ok(!panel.includes('state--error'), 'valid envelope must not hit the error state: ' + panel.slice(0, 120));
+  assert.ok(panel.includes('node__id'), 'task must render into the projekt panel');
 });

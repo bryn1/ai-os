@@ -14,17 +14,19 @@ the tracked files in this checkout at the 2026-10-27 docs sync, unless marked UN
   removed entirely (commit `1ee94f1` deleted `app/` and `serve/`).
 - `app.js:121` re-fetches every **60 s** (`POLL_MS = 60000`); the page just re-renders
   from the fresh static file.
-- If `boards.json` is missing or invalid, `app.js:106-111` sets `state.error` and the
-  page renders a graceful Swedish error + "Ingen data." instead of a blank page
-  (exercised in the browser during the 2026-09-26 audit: HTTP 404 and invalid JSON
-  both degrade gracefully).
+- If `boards.json` is missing or invalid, `app.js` sets `state.error` and the page renders
+  a graceful Swedish error + "Ingen data." instead of a blank page (exercised in the
+  browser during the 2026-09-26 audit: HTTP 404 and invalid JSON both degrade gracefully).
+  A malformed-but-valid body is caught the same way: `load()` runs `validateEnvelope()`
+  once before any render call (MC 11525 row #7), so every violation lands on that error
+  path — never a raw engine error in the panel.
 
 ## Module map
 
 | File | Concern |
 |---|---|
 | `index.html` | Static shell: topbar, board pills (orchestrator/svarkor), 4 tabs (projekt/beroenden/ko/verifiering), meta bar, panel bodies. Deep links `?board=` / `?tab=` are read by app.js. |
-| `static/js/app.js` | Shell ONLY: fetch + 60 s poll, board switch, tab switch, deep-link sync, error state. Holds no rendering logic. |
+| `static/js/app.js` | Shell ONLY: fetch + 60 s poll, one-shot envelope validation (`validateEnvelope`), board switch, tab switch, deep-link sync, error state. Holds no rendering logic. |
 | `static/js/render.js` | Pure, DOM-free render library (`window.Aos.render` in the browser, `module.exports` under node, render.js:438-439). No network calls, no state. Unit-tested. |
 | `static/css/app.css` | Mobile-first styles, status colours, SVG graph styling. |
 | `tests/render.test.js` | `node --test` suite for the pure render logic, requiring the REAL `../static/js/render.js`. Run with `node --test tests/render.test.js` (the directory form `node --test tests/` fails on Node v22 — ERR_UNSUPPORTED_DIR_IMPORT). |
@@ -72,8 +74,9 @@ A task is "näst på tur" (actionable) when it is `queued`, all its `[after:]` t
 reached a done state (unknown/pruned deps do not block), and it is `released` — required
 unconditionally, dep-free or not (render.js:126, aligned to the README contract by commit
 `10ec288`). `queueNext` also
-returns `inflight` (claimed/running), `waiting` (queued with unfinished deps) and `gated`
-(blocked / waiting_approval).
+returns `inflight` (claimed/running), `waiting` (queued but not actionable — unfinished
+`[after:]` targets OR not yet released; MC 11525 row #6 decision: queued+unreleased+deps-done
+shows in waiting, never invisible) and `gated` (blocked / waiting_approval).
 
 ## Verification tail (render.js:166-179)
 

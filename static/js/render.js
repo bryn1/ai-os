@@ -1,6 +1,7 @@
 // ============================================================================
 // render.js — pure rendering logic for the AI OS boards dashboard.
 // ============================================================================
+// SIZE reason: 43x L — over the 400 gate; Wave C splits this file by concern (audit row #16).
 // SINGLE CONCERN: turn the server-side scrubbed snapshot (boards.json) into HTML.
 // It is a PURE, DOM-free library: every function takes plain data and returns a
 // string or a plain object, so the whole surface is CommonJS-requireable under
@@ -57,7 +58,7 @@ function isProgress(status) { return isDone(status) && status !== 'cancelled'; }
 // Roots = tasks whose parent_id is empty or points outside this board's task set.
 function buildTree(tasks) {
   var arr = Array.isArray(tasks) ? tasks : [];
-  var nodes = {};
+  var nodes = Object.create(null); // proto-key-proof: display_id/parent_id are external data (MC 11525 row #5)
   arr.forEach(function (t) { nodes[String(t.display_id)] = { task: t, children: [] }; });
   var roots = [];
   arr.forEach(function (t) {
@@ -83,7 +84,7 @@ function dispKey(d) {
 // ---- project grouping (reuse render-grouping.groupByProject) ----
 var UNLINKED = '(ej kopplade)';
 function groupByProject(tasks) {
-  var map = {};
+  var map = Object.create(null); // proto-key-proof: project_slug is external data (MC 11525 row #5)
   (Array.isArray(tasks) ? tasks : []).forEach(function (t) {
     var key = t && t.project_slug ? String(t.project_slug) : UNLINKED;
     (map[key] = map[key] || []).push(t);
@@ -109,7 +110,7 @@ function projectProgress(tasks) {
 // released-gated + after-terminal. Also surfaces what is currently in flight.
 function queueNext(tasks) {
   var arr = Array.isArray(tasks) ? tasks : [];
-  var status = {};
+  var status = Object.create(null); // proto-key-proof: keyed by display_id (MC 11525 row #5)
   arr.forEach(function (t) { status[String(t.display_id)] = t.status; });
   var afterDone = function (t) {
     return (t.after || []).every(function (dep) {
@@ -126,7 +127,9 @@ function queueNext(tasks) {
     return dispKey(a.display_id) - dispKey(b.display_id);
   });
   var inflight = arr.filter(function (t) { return t.status === 'running' || t.status === 'claimed'; });
-  var waiting = arr.filter(function (t) { return t.status === 'queued' && !afterDone(t); });
+  // queued-but-not-actionable is VISIBLE here — unfinished deps OR not released
+  // (MC 11525 row #6 decision: queued+unreleased+deps-done shows in waiting, never 0-of-4).
+  var waiting = arr.filter(function (t) { return t.status === 'queued' && (!afterDone(t) || !t.released); });
   var gated = arr.filter(function (t) {
     return t.status === 'blocked' || t.status === 'waiting_approval';
   });
@@ -333,9 +336,9 @@ function renderDependencies(board) {
   if (board && board.error) return errorHTML('Tavlan kunde inte läsas.');
   var edges = dependencyEdges(tasks);
   if (!edges.length) return emptyHTML('Inga beroenden (inga [after:]/[onfail:]-taggar på denna tavla).');
-  var title = {};
+  var title = Object.create(null);
   tasks.forEach(function (t) { title[String(t.display_id)] = t.title || ''; });
-  var stat = {};
+  var stat = Object.create(null);
   tasks.forEach(function (t) { stat[String(t.display_id)] = t.status; });
   var rows = edges.map(function (e) {
     return '<li class="dep dep--' + e.kind + '">' +
@@ -358,20 +361,20 @@ function renderDependencies(board) {
 
 // A compact layered SVG DAG: nodes placed in columns by after-depth, edges as lines.
 function svgGraph(tasks, edges) {
-  var have = {};
+  var have = Object.create(null);
   tasks.forEach(function (t) { have[String(t.display_id)] = t; });
   // only nodes that participate in an edge (keeps the graph legible)
-  var involved = {};
+  var involved = Object.create(null);
   edges.forEach(function (e) { involved[e.from] = true; involved[e.to] = true; });
   var ids = Object.keys(involved).filter(function (id) { return have[id]; });
   if (!ids.length) return '';
   // depth = longest after-chain to a root; cap layout to keep it renderable
-  var depth = {};
-  var adjAfter = {};
+  var depth = Object.create(null);
+  var adjAfter = Object.create(null);
   edges.forEach(function (e) { if (e.kind === 'after') (adjAfter[e.to] = adjAfter[e.to] || []).push(e.from); });
   function d(id, seen) {
     if (depth[id] != null) return depth[id];
-    seen = seen || {};
+    seen = seen || Object.create(null);
     if (seen[id]) return 0;
     seen[id] = true;
     var deps = (adjAfter[id] || []).filter(function (x) { return have[x]; });
@@ -379,11 +382,11 @@ function svgGraph(tasks, edges) {
     return depth[id];
   }
   ids.forEach(function (id) { d(id); });
-  var cols = {};
+  var cols = Object.create(null);
   ids.forEach(function (id) { (cols[depth[id]] = cols[depth[id]] || []).push(id); });
   var colKeys = Object.keys(cols).map(Number).sort(function (a, b) { return a - b; });
   var COLW = 150, ROWH = 46, PADX = 16, PADY = 24, NW = 118, NH = 30;
-  var pos = {};
+  var pos = Object.create(null);
   colKeys.forEach(function (c, ci) {
     cols[c].sort(function (a, b) { return dispKey(a) - dispKey(b); });
     cols[c].forEach(function (id, ri) { pos[id] = { x: PADX + ci * COLW, y: PADY + ri * ROWH }; });

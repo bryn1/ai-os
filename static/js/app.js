@@ -103,10 +103,41 @@ function bind() {
   } catch (e) { /* older browsers: ignore */ }
 }
 
+// One-shot validation of the parsed snapshot BEFORE any render call (MC 11525 row #7):
+// a malformed-but-valid JSON body must land on the SAME Swedish error path as a fetch
+// failure — never a raw English TypeError in the panel, never a silently empty render.
+// Rules mirror what the renderers dereference; null counts as absent (emitter shape).
+function validateEnvelope(data) {
+  var isStrList = function (a) {
+    return Array.isArray(a) && a.every(function (d) { return typeof d === 'string'; });
+  };
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return 'Ögonblicksbilden är inte ett objekt.';
+  if (!Array.isArray(data.boards)) return 'Ögonblicksbilden saknar boards-listan.';
+  for (var i = 0; i < data.boards.length; i++) {
+    var b = data.boards[i];
+    if (!b || typeof b !== 'object' || Array.isArray(b)) return 'Tavla ' + i + ' är inte ett objekt.';
+    if (b.tasks != null && !Array.isArray(b.tasks)) return 'Tavla ' + i + ': tasks är inte en lista.';
+    var tasks = Array.isArray(b.tasks) ? b.tasks : [];
+    for (var j = 0; j < tasks.length; j++) {
+      var t = tasks[j];
+      if (!t || typeof t !== 'object' || Array.isArray(t)) return 'Tavla ' + i + ': jobb ' + j + ' är inte ett objekt.';
+      if (t.after != null && !isStrList(t.after)) return 'Tavla ' + i + ': jobb ' + j + ': after är inte en stränglista.';
+      if (t.onfail != null && !isStrList(t.onfail)) return 'Tavla ' + i + ': jobb ' + j + ': onfail är inte en stränglista.';
+      if (t.parent_id != null && typeof t.parent_id !== 'string') return 'Tavla ' + i + ': jobb ' + j + ': parent_id är inte en sträng.';
+      if (t.project_slug != null && typeof t.project_slug !== 'string') return 'Tavla ' + i + ': jobb ' + j + ': project_slug är inte en sträng.';
+    }
+  }
+  return null;
+}
+
 function load() {
   fetch(SNAPSHOT_URL, { cache: 'no-store' })
     .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function (data) { state.data = data; state.error = null; syncControls(); renderAll(); })
+    .then(function (data) {
+      var invalid = validateEnvelope(data);
+      if (invalid) { state.error = invalid; renderAll(); return; }
+      state.data = data; state.error = null; syncControls(); renderAll();
+    })
     .catch(function (e) { state.error = e && e.message ? e.message : String(e); renderAll(); });
 }
 
