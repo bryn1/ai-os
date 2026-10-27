@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Svarkor AI OS — Tavlor (läs-vy)</title>
-  <meta name="description" content="Publik läs-vy över Svarkor AI OS två Mission Control-tavlor (Orkestrator + Svarkor): projektträd, beroenden, kö och verifiering. Endast läsning, ingen känslig data." />
+  <meta name="description" content="Publik läs-vy över Svarkor AI OS Mission Control-tavla (Orkestrator): projektträd, beroenden, kö och verifiering. Endast läsning, ingen känslig data." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='0.9em'%20font-size='90'%3E%F0%9F%97%82%EF%B8%8F%3C/text%3E%3C/svg%3E" />
   <link rel="stylesheet" href="static/css/app.css?v=ead58f6a" />
 </head>
 <body>
@@ -18,7 +19,7 @@
         <span class="brand__phase">tavlor · läs-vy</span>
       </div>
 
-      <!-- Two-board switch: the two Mission Control boards -->
+      <!-- Board switch: the board(s) the current boards.json carries; one board is served today -->
       <nav class="board-switch" aria-label="Välj tavla">
         <button type="button" class="board-pill is-active" id="board-orchestrator" data-board="orchestrator" aria-pressed="true">Orkestrator</button>
         <button type="button" class="board-pill" id="board-svarkor" data-board="svarkor" aria-pressed="false">Svarkor</button>
@@ -51,7 +52,7 @@
   </main>
 
   <footer class="site-footer">
-    <p>Svarkor AI OS · Publik läs-vy över två Mission Control-tavlor · Endast läsning, inga ändringar utförs · Känsliga projekt och all känslig data är bortfiltrerade på servern.</p>
+    <p>Svarkor AI OS · Publik läs-vy över Mission Control-tavlan · Endast läsning, inga ändringar utförs · Känsliga projekt och all känslig data är bortfiltrerade på servern.</p>
   </footer>
 
   <script src="static/js/render.js?v=49675188"></script>

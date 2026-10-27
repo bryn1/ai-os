@@ -1,8 +1,9 @@
 # AI OS — Tavlor (publik läs-vy)
 
-A **public, read-only** dashboard that visualises BOTH Mission Control boards in one page:
+A **public, read-only** dashboard that visualises the fleet Mission Control board as one page:
 
-- **Orkestrator** (:8310) and **Svarkor** (:8320) — switch with the board toggle.
+- **Orkestrator** (:8310) — the one board the product serves today; the toggle switches
+  between the boards the current `boards.json` carries.
 - Per-project **task trees** (parent → child) with status colours and a workflow
   progress bar (what's done / what's left).
 - The **dependency graph**: `[after:]` (efter) and `[onfail:]` (vid fel) edges parsed from
@@ -37,7 +38,8 @@ then scrubs defense-in-depth before anything is written:
    file-paths / ports inline.
 3. Carries **ONLY** the safe fields. Per task: `display_id, parent_id, status, project_slug,
    seat, after/onfail/cycles edges, released, timestamps, scrubbed title, verifiable`
-   (the emitter-stamped structural verifiability flag, render.js:142-155). Envelope:
+   (the emitter-stamped structural verifiability flag, `isVerifiable()` / `verifyState()`
+   in render.js). Envelope:
    `generated_at`, and per board `id, label, hidden_count, task_count` (app.js:39-42).
    It never reads or emits `prompt / result_summary / result_payload / deploy_log /
    gate_criteria / model_policy / workdir / acceptance / deploy_spec / notes` — that

@@ -1,4 +1,4 @@
-// node --test tests/  — pure-logic tests for static/js/render.js against the
+// node --test tests/render.test.js — pure-logic tests for static/js/render.js against the
 // real snapshot shape emitted by mc-boards-snapshot.py (VM350-side).
 'use strict';
 const test = require('node:test');
@@ -68,10 +68,10 @@ test('queueNext: an unreleased queued task is NEVER näst på tur, even with no 
   assert.deepStrictEqual(q2.actionable.map(t => t.display_id), ['602']);
 });
 
-test('verificationTail splits awaiting vs verified vs cancelled', () => {
+test('verificationTail splits completed_unverified vs verified vs cancelled', () => {
   const v = R.verificationTail(tasks);
-  // awaiting = ALL completed_unverified (back-compat)
-  assert.deepStrictEqual(v.awaiting.map(t => t.display_id), ['600.2', '600.5']);
+  // the back-compat `awaiting` field (dead, zero consumers) was removed in Wave A, MC 11526 —
+  // the honest split below is the contract.
   assert.deepStrictEqual(v.verified.map(t => t.display_id), ['600.1']);
   assert.deepStrictEqual(v.cancelled.map(t => t.display_id), ['700']);
 });
@@ -106,13 +106,12 @@ test('renderVerification shows the three states, legend, and exact Swedish label
   assert.ok(html.includes('vbadge--verified'));
 });
 
-test('dependencyEdges emits after + onfail edges with known flag', () => {
+test('dependencyEdges emits after + onfail edges', () => {
   const e = R.dependencyEdges(tasks);
   const after = e.filter(x => x.kind === 'after');
   const onfail = e.filter(x => x.kind === 'onfail');
   assert.strictEqual(after.length, 3);   // 600.2, 600.3, 600.4
   assert.strictEqual(onfail.length, 1);  // 600.3
-  assert.ok(after.every(x => x.known === true));
 });
 
 test('renderers produce HTML and escape untrusted text', () => {

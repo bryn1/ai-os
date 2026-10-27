@@ -35,8 +35,8 @@ body {
   font-family: var(--sans); font-size: 15px; line-height: 1.45;
   padding-bottom: env(safe-area-inset-bottom);
 }
-.skip-link { position: absolute; left: -999px; }
-.skip-link:focus { left: 8px; top: 8px; background: var(--accent); color: #fff; padding: 8px 12px; border-radius: 6px; z-index: 50; }
+.skip-link { position: absolute; left: -999px; color: var(--accent); }
+.skip-link:focus { left: 8px; top: 8px; background: var(--accent); color: #06101f; padding: 8px 12px; border-radius: 6px; z-index: 50; } /* same accent/dark pair as .board-pill.is-active, reads in dark AND light */
 
 /* ---- header ---- */
 .topbar { position: sticky; top: 0; z-index: 20; background: var(--bg-2); border-bottom: 1px solid var(--line); }

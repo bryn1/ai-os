@@ -57,8 +57,6 @@ function isProgress(status) { return isDone(status) && status !== 'cancelled'; }
 // Roots = tasks whose parent_id is empty or points outside this board's task set.
 function buildTree(tasks) {
   var arr = Array.isArray(tasks) ? tasks : [];
-  var byId = {};
-  arr.forEach(function (t) { if (t && t.display_id != null) byId[String(t.display_id)] = t; });
   var nodes = {};
   arr.forEach(function (t) { nodes[String(t.display_id)] = { task: t, children: [] }; });
   var roots = [];
@@ -96,8 +94,6 @@ function groupByProject(tasks) {
 // where a project is in its workflow: progress = done-and-not-cancelled / (total - cancelled)
 function projectProgress(tasks) {
   var arr = Array.isArray(tasks) ? tasks : [];
-  var counts = {};
-  arr.forEach(function (t) { counts[t.status] = (counts[t.status] || 0) + 1; });
   var active = arr.filter(function (t) { return t.status !== 'cancelled'; });
   var done = active.filter(function (t) { return isProgress(t.status); });
   return {
@@ -105,8 +101,7 @@ function projectProgress(tasks) {
     active: active.length,
     done: done.length,
     cancelled: arr.length - active.length,
-    pct: active.length ? Math.round((done.length / active.length) * 100) : 0,
-    counts: counts
+    pct: active.length ? Math.round((done.length / active.length) * 100) : 0
   };
 }
 
@@ -125,9 +120,10 @@ function queueNext(tasks) {
   var actionable = arr.filter(function (t) {
     return t.status === 'queued' && afterDone(t) && !!t.released; // README contract: [released] required, dep-free or not
   });
-  // stricter view: released ones float to the top
+  // stable human order by display_id (the old released-first term was dead: the
+  // filter above admits only released tasks, so it was 0 for every pair)
   actionable.sort(function (a, b) {
-    return (b.released ? 1 : 0) - (a.released ? 1 : 0) || dispKey(a.display_id) - dispKey(b.display_id);
+    return dispKey(a.display_id) - dispKey(b.display_id);
   });
   var inflight = arr.filter(function (t) { return t.status === 'running' || t.status === 'claimed'; });
   var waiting = arr.filter(function (t) { return t.status === 'queued' && !afterDone(t); });
@@ -168,9 +164,7 @@ function verificationTail(tasks) {
   var arr = Array.isArray(tasks) ? tasks : [];
   var awaiting = arr.filter(function (t) { return t.status === 'completed_unverified'; });
   return {
-    // `awaiting` kept = ALL completed_unverified (back-compat); the two sub-buckets are the
-    // honest split the dashboard renders.
-    awaiting: awaiting,
+    // the two sub-buckets are the honest split of completed_unverified that the dashboard renders.
     awaitingVerifiable: awaiting.filter(isVerifiable),
     unverifiable: awaiting.filter(function (t) { return !isVerifiable(t); }),
     verified: arr.filter(function (t) { return t.status === 'verified' || t.status === 'deployed'; }),
@@ -181,15 +175,13 @@ function verificationTail(tasks) {
 // ---- dependency edges: after (solid) + onfail (fel-gren) between display_ids ----
 function dependencyEdges(tasks) {
   var arr = Array.isArray(tasks) ? tasks : [];
-  var have = {};
-  arr.forEach(function (t) { have[String(t.display_id)] = true; });
   var edges = [];
   arr.forEach(function (t) {
     (t.after || []).forEach(function (dep) {
-      edges.push({ from: String(dep), to: String(t.display_id), kind: 'after', known: !!have[String(dep)] });
+      edges.push({ from: String(dep), to: String(t.display_id), kind: 'after' });
     });
     (t.onfail || []).forEach(function (dep) {
-      edges.push({ from: String(dep), to: String(t.display_id), kind: 'onfail', known: !!have[String(dep)] });
+      edges.push({ from: String(dep), to: String(t.display_id), kind: 'onfail' });
     });
   });
   return edges;
@@ -430,9 +422,8 @@ var API = {
   isDone: isDone, isProgress: isProgress, buildTree: buildTree, groupByProject: groupByProject,
   projectProgress: projectProgress, queueNext: queueNext, verificationTail: verificationTail,
   dependencyEdges: dependencyEdges, renderProjects: renderProjects, renderQueue: renderQueue,
-  renderVerification: renderVerification, renderDependencies: renderDependencies, UNLINKED: UNLINKED,
-  isVerifiable: isVerifiable, verifyState: verifyState, VERIFY_LABEL: VERIFY_LABEL,
-  cappedTitle: cappedTitle, VERIFIED_CAP: VERIFIED_CAP, CANCELLED_CAP: CANCELLED_CAP
+  renderVerification: renderVerification, renderDependencies: renderDependencies,
+  verifyState: verifyState, cappedTitle: cappedTitle
 };
 
 if (typeof window !== 'undefined') { window.Aos = window.Aos || {}; window.Aos.render = API; }

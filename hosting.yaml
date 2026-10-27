@@ -3,7 +3,7 @@
   "type": "static",
   "root": ".",
   "title": "AI OS – Tavlor",
-  "description": "Publik läs-vy över Svarkor AI OS två Mission Control-tavlor: projektträd, beroenden, kö och verifiering. Endast läsning, ingen känslig data.",
+  "description": "Publik läs-vy över Svarkor AI OS Mission Control-tavla: projektträd, beroenden, kö och verifiering. Endast läsning, ingen känslig data.",
   "tags": ["dashboard", "mission-control", "läs-vy"],
   "icon": "🗂️"
 }

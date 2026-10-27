@@ -1,8 +1,8 @@
 # ARCHITECTURE — AI OS — Tavlor (public read-only boards dashboard)
 
 One subject: how the public dashboard is built, what data contract it consumes, and
-where the parts that are NOT in this repo live. Every claim below was checked against
-the tracked files at master `6f51344` unless marked UNVERIFIED.
+where the parts that are NOT in this repo live. Every claim below was re-checked against
+the tracked files in this checkout at the 2026-10-27 docs sync, unless marked UNVERIFIED.
 
 ## Model: a static snapshot, no backend
 
@@ -38,7 +38,8 @@ Envelope: `generated_at` (timestamp string, app.js:39) and `boards[]`, each boar
 Per task (consumed by render.js): `display_id`, `parent_id`, `status`, `project_slug`,
 `seat`, `title`, `released`, `after[]`, `onfail[]`, `cycles`, and `verifiable` — the
 emitter-stamped structural flag that drives the honest three-way verification split
-(render.js:142-155; a `completed_unverified` card without it counts as unverifiable).
+(`isVerifiable()` / `verifyState()` in render.js; a `completed_unverified` card without
+it counts as unverifiable).
 
 The emitter never reads or emits `prompt / result_summary / result_payload / deploy_log /
 gate_criteria / model_policy / workdir / acceptance / deploy_spec / notes`, excludes whole
@@ -84,9 +85,11 @@ verifier refuses it until a bar is derived), **verified** (`verified`/`deployed`
 
 ## Dependency graph (render.js:182-196, 368-420)
 
-`[after:]` and `[onfail:]` tags arrive pre-parsed as `after[]`/`onfail[]` arrays; the
-edge list marks deps pointing outside the board as `known:false`. `svgGraph` layers
-nodes by longest after-chain depth and draws both edge kinds as an SVG DAG; the edge
+`[after:]` and `[onfail:]` tags arrive pre-parsed as `after[]`/`onfail[]` arrays;
+`dependencyEdges()` emits one edge per tag, and a dep pointing outside the board is
+simply shown as-is in the edge list (its raw from-id, unmarked) while `svgGraph` omits
+it, since the graph draws on-board nodes only. `svgGraph` layers nodes by longest
+after-chain depth and draws both edge kinds as an SVG DAG; the edge
 list is unit-tested, the SVG layout itself has no direct test (audit note).
 
 ## Out of scope of this repo
