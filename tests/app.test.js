@@ -1,7 +1,7 @@
 // node --test tests/app.test.js — regression tests for the dashboard SHELL
-// (static/js/app.js) under a fake DOM: the REAL shell is loaded (render.js
-// first, so window.Aos.render is real too) and every innerHTML write is
-// recorded. Pins the meta-strip escaping contract — label, task_count and
+// (static/js/app.js) under a fake DOM: the REAL shell is loaded (the render lib's
+// six concern files first, so window.Aos.render is real too) and every innerHTML
+// write is recorded. Pins the meta-strip escaping contract — label, task_count and
 // hidden_count must ALL reach innerHTML via escapeHtml (stored XSS,
 // MC 11524, audit FINDINGS-synthesis row #1). Fake-DOM technique adapted
 // from the audit's probe (out/.tmp/test/probe-r1.mjs), assertions added.
@@ -11,7 +11,11 @@ const assert = require('node:assert');
 const path = require('node:path');
 
 const APP = path.join(__dirname, '..', 'static', 'js', 'app.js');
-const RENDER = path.join(__dirname, '..', 'static', 'js', 'render.js');
+// the render lib: the six concern files of the MC 11525 C1 split, in index.html
+// load order (render-verify.js reuses render-queue.js row lists).
+const RENDER = ['render-core.js', 'render-data.js', 'render-projects.js', 'render-queue.js',
+                'render-verify.js', 'render-deps.js']
+  .map((f) => path.join(__dirname, '..', 'static', 'js', f));
 const TABS = ['projekt', 'beroenden', 'ko', 'verifiering'];
 
 // Load the REAL app.js against a minimal fake DOM fed one boards.json
@@ -51,10 +55,9 @@ function loadShell(data) {
   global.setInterval = () => 0; // keep the 60 s poll out of the test process
   global.fetch = async () => ({ ok: true, status: 200, json: async () => data });
 
-  delete require.cache[require.resolve(APP)];
-  delete require.cache[require.resolve(RENDER)];
-  require(RENDER); // REAL pure lib -> window.Aos.render
-  require(APP);    // REAL shell — module under test
+  [APP].concat(RENDER).forEach((f) => { delete require.cache[require.resolve(f)]; });
+  RENDER.forEach((f) => require(f)); // REAL pure lib -> window.Aos.render
+  require(APP);                      // REAL shell — module under test
 
   // the fetch().then chain is pure microtasks; one macrotask boundary drains it
   return new Promise(resolve => setImmediate(() => resolve(writes)));

@@ -1,12 +1,16 @@
 // ============================================================================
 // app.js — dashboard shell: fetch the static snapshot, board switch, tab switch,
 // poll. It issues NO board API call and holds NO token: it polls ONE static file
-// (boards.json) that the server-side emitter already scrubbed. All rendering is
-// delegated to the pure window.Aos.render library.
+// (boards.json) that the server-side emitter already scrubbed. All rendering —
+// the four tab panels AND the meta strip / error / loading states — is delegated
+// to the pure window.Aos.render library (Wave C1c, audit row #18: the shell
+// holds no markup; every string lives in render-core.js).
 // ============================================================================
 (function () {
 'use strict';
 if (typeof window === 'undefined' || !window.document) return;
+
+var R = window.Aos.render;
 
 var SNAPSHOT_URL = 'boards.json';   // co-located with index.html on the served root
 var POLL_MS = 60000;
@@ -21,42 +25,29 @@ function boardById(id) {
 }
 
 var RENDERERS = {
-  projekt: function (b) { return window.Aos.render.renderProjects(b); },
-  beroenden: function (b) { return window.Aos.render.renderDependencies(b); },
-  ko: function (b) { return window.Aos.render.renderQueue(b); },
-  verifiering: function (b) { return window.Aos.render.renderVerification(b); }
+  projekt: function (b) { return R.renderProjects(b); },
+  beroenden: function (b) { return R.renderDependencies(b); },
+  ko: function (b) { return R.renderQueue(b); },
+  verifiering: function (b) { return R.renderVerification(b); }
 };
 
+// the meta strip + the error/loading states are string builders in the render
+// lib (metaHTML / errorHTML / renderErrorHTML / loadingHTML) — see render-core.js.
 function renderMeta() {
   var bar = $('meta-bar');
   if (!bar) return;
-  if (state.error) {
-    bar.innerHTML = '<span class="meta meta--error">Kunde inte läsa ögonblicksbilden: ' +
-      window.Aos.render.escapeHtml(state.error) + '</span>';
-    return;
-  }
-  var b = boardById(state.board);
-  var gen = state.data && state.data.generated_at ? new Date(state.data.generated_at) : null;
-  var when = gen ? gen.toLocaleString('sv-SE') : '—';
-  var hidden = b ? (b.hidden_count || 0) : 0;
-  var tasks = b ? (b.task_count || (b.tasks ? b.tasks.length : 0)) : 0;
-  bar.innerHTML =
-    '<span class="meta">Tavla: <strong>' + window.Aos.render.escapeHtml(b ? b.label : '—') + '</strong></span>' +
-    '<span class="meta">' + window.Aos.render.escapeHtml(tasks) + ' jobb</span>' +
-    '<span class="meta meta--hidden" title="Känsliga projekt filtrerade på servern">' + window.Aos.render.escapeHtml(hidden) + ' dolda (känsliga)</span>' +
-    '<span class="meta meta--time">Uppdaterad ' + window.Aos.render.escapeHtml(when) + '</span>';
+  bar.innerHTML = R.metaHTML(boardById(state.board), state.data, state.error);
 }
 
 function renderPanel() {
   var body = $(state.tab + '-body');
   if (!body) return;
-  if (state.error) { body.innerHTML = '<div class="state state--error" role="alert">Ingen data.</div>'; return; }
+  if (state.error) { body.innerHTML = R.errorHTML('Ingen data.'); return; }
   var b = boardById(state.board);
   try {
     body.innerHTML = (RENDERERS[state.tab] || RENDERERS.projekt)(b);
   } catch (e) {
-    body.innerHTML = '<div class="state state--error" role="alert">Renderingsfel: ' +
-      window.Aos.render.escapeHtml(e && e.message) + '</div>';
+    body.innerHTML = R.renderErrorHTML(e && e.message);
   }
 }
 
@@ -147,7 +138,7 @@ function syncControls() { showBoard(state.board); showTab(state.tab); }
 function boot() {
   bind();
   var body = $('projekt-body');
-  if (body) body.innerHTML = '<div class="state state--loading" role="status">Läser in tavlor…</div>';
+  if (body) body.innerHTML = R.loadingHTML();
   load();
   setInterval(load, POLL_MS);
 }

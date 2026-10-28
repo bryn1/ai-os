@@ -39,8 +39,9 @@ then scrubs defense-in-depth before anything is written:
 3. Carries **ONLY** the safe fields. Per task: `display_id, parent_id, status, project_slug,
    seat, after/onfail/cycles edges, released, timestamps, scrubbed title, verifiable`
    (the emitter-stamped structural verifiability flag, `isVerifiable()` / `verifyState()`
-   in render.js). Envelope:
-   `generated_at`, and per board `id, label, hidden_count, task_count` (app.js:39-42).
+   in render-core.js). Envelope:
+   `generated_at`, and per board `id, label, hidden_count, task_count` (read by
+   `boardById` in app.js and `metaHTML` in render-core.js).
    It never reads or emits `prompt / result_summary / result_payload / deploy_log /
    gate_criteria / model_policy / workdir / acceptance / deploy_spec / notes` — that
    exclusion is enforced by the emitter, which lives outside this repo.
@@ -53,9 +54,16 @@ sidecar). A cron/timer on VM350 refreshes it; the public page just re-fetches it
 
 ```
 index.html            static shell (root — required for a static app)
-static/css/app.css     mobile-first styles + status colours + SVG graph
-static/js/render.js     pure, DOM-free render library (unit-tested under node)
+static/css/app.css     mobile-first styles + one status-tone family + SVG graph
+static/js/render-core.js   vocabulary + shared chips/primitives + shell builders (load 1st)
+static/js/render-data.js   tree / grouping / progress / queue / verification / edges
+static/js/render-projects.js  "Projekt" tab: task trees in project cards
+static/js/render-queue.js  "Kö" tab: queue row lists
+static/js/render-verify.js "Verifiering" tab: three-state legend + capped tails
+static/js/render-deps.js   "Beroenden" tab: edge list + layered SVG DAG
 static/js/app.js        shell: fetch boards.json, board switch, tab switch, poll
+                         (the six render-*.js plain scripts assemble window.Aos.render
+                          in index.html load order, before app.js — unit-tested under node)
 hosting.yaml            vm106 hosting manifest (type: static)
 tests/render.test.js    node --test suite for the pure render logic
 docs/ARCHITECTURE.md    the architecture doc kept true (static snapshot model, contracts)

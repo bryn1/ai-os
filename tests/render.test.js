@@ -1,9 +1,18 @@
-// node --test tests/render.test.js — pure-logic tests for static/js/render.js against the
-// real snapshot shape emitted by mc-boards-snapshot.py (VM350-side).
+// node --test tests/render.test.js — pure-logic tests for the render lib (the six
+// static/js/render-*.js concern files of the MC 11525 C1 split, required in
+// index.html load order and merged — they assemble the same window.Aos.render
+// surface) against the real snapshot shape emitted by mc-boards-snapshot.py
+// (VM350-side).
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const R = require('../static/js/render.js');
+const R = Object.assign({},
+  require('../static/js/render-core.js'),
+  require('../static/js/render-data.js'),
+  require('../static/js/render-projects.js'),
+  require('../static/js/render-queue.js'),
+  require('../static/js/render-verify.js'),
+  require('../static/js/render-deps.js'));
 
 const tasks = [
   { display_id: '600',   parent_id: null,  status: 'queued',               project_slug: 'demo', seat: null,    title: 'Root goal', released: false, after: [], onfail: [], cycles: null },

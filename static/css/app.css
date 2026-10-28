@@ -28,6 +28,27 @@
     --vf-pending: #0e8fa3; --vf-unverifiable: #8a5f30; --vf-verified: #2ea043;
   }
 }
+/* ---- tone family (design F2 / MC 11525 C1b, audit row #17) ----
+   ONE place maps a status tone to its colour. The JS STATUS map (render-core.js)
+   turns status -> tone and emits the chip--/node--/row--/gnode-- classes; each
+   tone below feeds var(--tone) in the consumer rule of every family it styles
+   (.chip/.node/.row/.gnode). A new status = one STATUS row + (only if its colour
+   is new) one line here — instead of the 36 per-family rules this replaced. */
+.chip--queued, .node--queued, .row--queued, .gnode--queued { --tone: var(--queued); }
+.chip--running, .node--running, .row--running, .gnode--running { --tone: var(--running); }
+.chip--blocked, .node--blocked, .row--blocked, .gnode--blocked { --tone: var(--blocked); }
+.chip--approval, .node--approval, .row--approval, .gnode--approval { --tone: var(--approval); }
+.chip--unverified, .node--unverified, .row--unverified, .gnode--unverified { --tone: var(--unverified); }
+.chip--verified, .node--verified, .row--verified, .gnode--verified { --tone: var(--verified); }
+.chip--deployed, .node--deployed, .row--deployed, .gnode--deployed { --tone: var(--deployed); }
+.chip--cancelled, .node--cancelled, .row--cancelled, .gnode--cancelled { --tone: var(--cancelled); }
+.chip--default, .node--default, .row--default, .gnode--default { --tone: var(--default); }
+/* non-status chip tones, and the chip background-mix exceptions (defaults 22%) */
+.chip--seat { --tone: var(--seat); }
+.chip--released { --tone: var(--accent); --tone-mix: 18%; }
+.chip--deployed { --tone-mix: 26%; }
+/* cancelled cards read dimmed in the tree and the row lists (a dimming, not a colour) */
+.node--cancelled, .row--cancelled { opacity: .72; }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
@@ -78,19 +99,12 @@ body {
 .state { padding: 24px 16px; text-align: center; color: var(--fg-dim); border: 1px dashed var(--line); border-radius: var(--radius); background: var(--bg-2); }
 .state--error { color: var(--blocked); border-color: var(--blocked); }
 
-/* ---- chips ---- */
-.chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600; white-space: nowrap; line-height: 1.5; }
-.chip--queued { background: color-mix(in srgb, var(--queued) 22%, transparent); color: var(--queued); }
-.chip--running { background: color-mix(in srgb, var(--running) 22%, transparent); color: var(--running); }
-.chip--blocked { background: color-mix(in srgb, var(--blocked) 22%, transparent); color: var(--blocked); }
-.chip--approval { background: color-mix(in srgb, var(--approval) 22%, transparent); color: var(--approval); }
-.chip--unverified { background: color-mix(in srgb, var(--unverified) 22%, transparent); color: var(--unverified); }
-.chip--verified { background: color-mix(in srgb, var(--verified) 22%, transparent); color: var(--verified); }
-.chip--deployed { background: color-mix(in srgb, var(--deployed) 26%, transparent); color: var(--deployed); }
-.chip--cancelled { background: color-mix(in srgb, var(--cancelled) 22%, transparent); color: var(--cancelled); }
-.chip--default { background: color-mix(in srgb, var(--default) 22%, transparent); color: var(--default); }
-.chip--seat { background: color-mix(in srgb, var(--seat) 22%, transparent); color: var(--seat); }
-.chip--released { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+/* ---- chips (consumer of --tone, see the tone family above) ---- */
+.chip {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .72rem;
+  font-weight: 600; white-space: nowrap; line-height: 1.5;
+  background: color-mix(in srgb, var(--tone) var(--tone-mix, 22%), transparent); color: var(--tone);
+}
 
 /* ---- verification-state badges (the honest three-state marker) ---- */
 .vbadge {
@@ -127,15 +141,7 @@ body {
 .progress__pct { position: relative; margin: 0 auto; font-size: .68rem; font-weight: 700; color: var(--fg); mix-blend-mode: difference; }
 .project__tree { padding: 4px 10px 12px; overflow-x: auto; }
 
-.node { border-left: 3px solid var(--default); padding: 8px 10px; margin: 6px 0; background: var(--bg-3); border-radius: 0 8px 8px 0; }
-.node--queued { border-left-color: var(--queued); }
-.node--running { border-left-color: var(--running); }
-.node--blocked { border-left-color: var(--blocked); }
-.node--approval { border-left-color: var(--approval); }
-.node--unverified { border-left-color: var(--unverified); }
-.node--verified { border-left-color: var(--verified); }
-.node--deployed { border-left-color: var(--deployed); }
-.node--cancelled { border-left-color: var(--cancelled); opacity: .72; }
+.node { border-left: 3px solid var(--tone, var(--default)); padding: 8px 10px; margin: 6px 0; background: var(--bg-3); border-radius: 0 8px 8px 0; }
 .node__head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .node__id { font-family: var(--mono); font-size: .78rem; color: var(--accent); }
 .node__title { margin: 4px 0 0; font-size: .88rem; word-break: break-word; }
@@ -150,15 +156,7 @@ body {
 
 /* ---- rows (queue / verification) ---- */
 .rows { list-style: none; margin: 0; padding: 0; }
-.row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 9px 10px; border: 1px solid var(--line); border-left-width: 3px; border-radius: 6px; background: var(--bg-2); margin-bottom: 6px; }
-.row--queued { border-left-color: var(--queued); }
-.row--running { border-left-color: var(--running); }
-.row--blocked { border-left-color: var(--blocked); }
-.row--approval { border-left-color: var(--approval); }
-.row--unverified { border-left-color: var(--unverified); }
-.row--verified { border-left-color: var(--verified); }
-.row--deployed { border-left-color: var(--deployed); }
-.row--cancelled { border-left-color: var(--cancelled); opacity: .72; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 9px 10px; border: 1px solid var(--line); border-left-width: 3px; border-left-color: var(--tone, var(--line)); border-radius: 6px; background: var(--bg-2); margin-bottom: 6px; }
 .row__id { font-family: var(--mono); font-size: .78rem; color: var(--accent); }
 .row__title { flex: 1 1 200px; font-size: .86rem; word-break: break-word; }
 .row__edges { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
@@ -171,11 +169,7 @@ body {
 .glink--onfail { stroke: var(--blocked); stroke-dasharray: 4 3; }
 .marker--after { fill: var(--accent); }
 .marker--onfail { fill: var(--blocked); }
-.gnode { fill: var(--bg-3); stroke: var(--default); stroke-width: 1.4; }
-.gnode--queued { stroke: var(--queued); } .gnode--running { stroke: var(--running); }
-.gnode--blocked { stroke: var(--blocked); } .gnode--approval { stroke: var(--approval); }
-.gnode--unverified { stroke: var(--unverified); } .gnode--verified { stroke: var(--verified); }
-.gnode--deployed { stroke: var(--deployed); } .gnode--cancelled { stroke: var(--cancelled); }
+.gnode { fill: var(--bg-3); stroke: var(--tone, var(--default)); stroke-width: 1.4; }
 .gnode__t { fill: var(--fg); font-family: var(--mono); font-size: 12px; }
 
 .deps { list-style: none; margin: 8px 0 0; padding: 0; }
