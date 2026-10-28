@@ -259,3 +259,37 @@ test('integration (MC 11525 #19iv): proto-key shapes + queued-unreleased-deps-do
   const q = R.renderQueue(board);
   assert.ok(q.includes('901'), 'the queued+unreleased+deps-done task is visible in the queue tab');
 });
+
+// ===================== MC 11525 Wave C2 a11y pins =====================
+
+test('C2f: the dependency SVG is labelled — <title>Beroendegraf</title>, aria-labelledby + aria-describedby', () => {
+  const html = R.renderDependencies({ tasks });
+  const svg = html.slice(html.indexOf('<svg'), html.indexOf('</svg>'));
+  assert.ok(/<title id="graph-title">Beroendegraf<\/title>/.test(svg), 'svg carries the Swedish title');
+  assert.ok(svg.includes('aria-labelledby="graph-title"'), 'svg names its title');
+  assert.ok(html.includes('id="dep-legend"') && svg.includes('aria-describedby="dep-legend"'),
+    'svg describes itself via the legend line present on the same page');
+  assert.ok(!svg.includes('aria-label='), 'the generic aria-label is REPLACED, not left beside the title');
+});
+
+test('C2f: every graph node carries a <title> "id · Swedish status" + a status letter (status beyond colour)', () => {
+  const html = R.renderDependencies({ tasks });
+  const svg = html.slice(html.indexOf('<svg'), html.indexOf('</svg>'));
+  const nodeGs = svg.match(/<g transform[^>]*>.*?<\/g>/g) || [];
+  assert.ok(nodeGs.length >= 4, 'corpus draws multiple nodes, got ' + nodeGs.length);
+  for (const g of nodeGs) {
+    const t = (g.match(/<title>([^<]+)<\/title>/) || [])[1];
+    assert.ok(t && /\S+ · \S+/.test(t), 'every node has an "id · status" title, got: ' + t);
+    assert.ok(/class="gnode__status"[^>]*>[A-Z?]<\/text>/.test(g),
+      'every node carries the non-colour status letter, got: ' + g.slice(-160));
+  }
+  assert.ok(nodeGs.some(g => g.includes('>600.1 · Verifierad<')), 'a node title names id + Swedish status');
+});
+
+test('C2c: the beroenden panel has a real heading and project cards carry h2 project names', () => {
+  const deps = R.renderDependencies({ tasks });
+  assert.ok(deps.includes('<h2 class="sec__title">Beroenden</h2>'), 'beroenden panel heading exists');
+  const proj = R.renderProjects({ tasks });
+  assert.ok(proj.includes('<h2 class="project__name">'), 'project cards use real h2 headings');
+  assert.ok(!proj.includes('<span class="project__name">'), 'the fake-heading span is gone (replace-not-add)');
+});

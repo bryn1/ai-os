@@ -6,18 +6,18 @@
   <title>Svarkor AI OS — Tavlor (läs-vy)</title>
   <meta name="description" content="Publik läs-vy över Svarkor AI OS Mission Control-tavla (Orkestrator): projektträd, beroenden, kö och verifiering. Endast läsning, ingen känslig data." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='0.9em'%20font-size='90'%3E%F0%9F%97%82%EF%B8%8F%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="static/css/app.css?v=4635bf4c" />
+  <link rel="stylesheet" href="static/css/app.css?v=cdfd3714" />
 </head>
 <body>
   <a class="skip-link" href="#main">Hoppa till innehåll</a>
 
   <header class="topbar">
     <div class="topbar__inner">
-      <div class="brand">
+      <h1 class="brand">
         <span class="brand__mark" aria-hidden="true">◈</span>
         <span class="brand__name">Svarkor <strong>AI&nbsp;OS</strong></span>
         <span class="brand__phase">tavlor · läs-vy</span>
-      </div>
+      </h1>
 
       <!-- Board switch: the board(s) the current boards.json carries; one board is served today -->
       <nav class="board-switch" aria-label="Välj tavla">
@@ -26,27 +26,36 @@
       </nav>
     </div>
 
+    <!-- ARIA tab pattern (MC 11525 C2c, audit rows #11/#12): roving tabindex — the
+         selected tab is in the tab order (0), the others are reachable with the arrow
+         keys (app.js binds ArrowLeft/Right/Home/End, -1). aria-controls points each
+         tab at its panel; the panels declare role=tabpanel + aria-labelledby back. -->
     <nav class="tabs" aria-label="Vy" role="tablist">
-      <button type="button" class="tab is-active" id="tab-projekt" role="tab" aria-selected="true" data-tab="projekt">Projekt</button>
-      <button type="button" class="tab" id="tab-beroenden" role="tab" aria-selected="false" data-tab="beroenden">Beroenden</button>
-      <button type="button" class="tab" id="tab-ko" role="tab" aria-selected="false" data-tab="ko">Kö</button>
-      <button type="button" class="tab" id="tab-verifiering" role="tab" aria-selected="false" data-tab="verifiering">Verifiering</button>
+      <button type="button" class="tab is-active" id="tab-projekt" role="tab" aria-selected="true" tabindex="0" aria-controls="panel-projekt" data-tab="projekt">Projekt</button>
+      <button type="button" class="tab" id="tab-beroenden" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-beroenden" data-tab="beroenden">Beroenden</button>
+      <button type="button" class="tab" id="tab-ko" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-ko" data-tab="ko">Kö</button>
+      <button type="button" class="tab" id="tab-verifiering" role="tab" aria-selected="false" tabindex="-1" aria-controls="panel-verifiering" data-tab="verifiering">Verifiering</button>
     </nav>
   </header>
 
   <main id="main" class="page">
-    <div id="meta-bar" class="meta-bar" aria-live="polite"></div>
+    <div class="meta-bar">
+      <div id="meta-info" class="meta-bar__info"></div>
+      <!-- C2d (row #13): ONLY this line is a live region, and it carries nothing but
+           the error/status line — the routinely-changing counts stay unannounced. -->
+      <div id="meta-status" class="meta-bar__status" role="status" aria-live="polite"></div>
+    </div>
 
-    <section id="panel-projekt" class="panel" data-tab="projekt" aria-labelledby="tab-projekt">
+    <section id="panel-projekt" class="panel" role="tabpanel" data-tab="projekt" aria-labelledby="tab-projekt">
       <div id="projekt-body" class="panel__body"></div>
     </section>
-    <section id="panel-beroenden" class="panel" data-tab="beroenden" aria-labelledby="tab-beroenden" hidden>
+    <section id="panel-beroenden" class="panel" role="tabpanel" data-tab="beroenden" aria-labelledby="tab-beroenden" hidden>
       <div id="beroenden-body" class="panel__body"></div>
     </section>
-    <section id="panel-ko" class="panel" data-tab="ko" aria-labelledby="tab-ko" hidden>
+    <section id="panel-ko" class="panel" role="tabpanel" data-tab="ko" aria-labelledby="tab-ko" hidden>
       <div id="ko-body" class="panel__body"></div>
     </section>
-    <section id="panel-verifiering" class="panel" data-tab="verifiering" aria-labelledby="tab-verifiering" hidden>
+    <section id="panel-verifiering" class="panel" role="tabpanel" data-tab="verifiering" aria-labelledby="tab-verifiering" hidden>
       <div id="verifiering-body" class="panel__body"></div>
     </section>
   </main>
@@ -57,12 +66,12 @@
 
   <!-- the render lib: six concern files in dependency order (render-core first;
        render-verify reuses render-queue's row lists), then the shell (MC 11525 C1) -->
-  <script src="static/js/render-core.js?v=f3d2c0fd"></script>
+  <script src="static/js/render-core.js?v=1e44d58d"></script>
   <script src="static/js/render-data.js?v=375fc09f"></script>
-  <script src="static/js/render-projects.js?v=d3ed7870"></script>
+  <script src="static/js/render-projects.js?v=5eb4395d"></script>
   <script src="static/js/render-queue.js?v=4a4db656"></script>
   <script src="static/js/render-verify.js?v=42c97548"></script>
-  <script src="static/js/render-deps.js?v=6af234eb"></script>
-  <script src="static/js/app.js?v=f78501fc"></script>
+  <script src="static/js/render-deps.js?v=e360eec5"></script>
+  <script src="static/js/app.js?v=f38af3c6"></script>
 </body>
 </html>

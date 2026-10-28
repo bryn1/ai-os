@@ -10,6 +10,8 @@
   --queued: #7c8798; --running: #e0a13a; --blocked: #e5484d;
   --approval: #b083f0; --unverified: #35b6c9; --verified: #3fb950; --deployed: #2ea043;
   --cancelled: #55606d; --default: #7c8798; --seat: #6e7bd8;
+  /* text color on the accent background (active board pill, focus chip) */
+  --on-accent: #06101f;
   /* verification-state palette (three honest states) — kept distinct from the amber
      'running' and grey 'queued' tones so the states never read alike:
        pending      = teal (info: has a bar, awaiting a verifier)
@@ -23,9 +25,19 @@
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #f4f6f9; --bg-2: #ffffff; --bg-3: #eef1f5; --line: #d6dde5;
-    --fg: #1a2029; --fg-dim: #4a5563; --fg-mut: #78848f;
-    --cancelled: #9aa5b1;
-    --vf-pending: #0e8fa3; --vf-unverifiable: #8a5f30; --vf-verified: #2ea043;
+    --fg: #1a2029; --fg-dim: #4a5563; --fg-mut: #55606c;
+    /* MC 11525 Wave C2b (audit row #3, FINDINGS-visual-a11y F1): the dark-tuned
+       status/accent tokens measured 1.99–3.53:1 on the light card bg — below WCAG
+       AA 4.5:1 for the 11.5px chip text. Every token that paints TEXT in the light
+       scheme is retuned here (same hue families, darkened). Verified per-background
+       (.audits/…/out/.tmp/c2/palette.mjs usage table: chip 22% / released 18% /
+       deployed 26% / vbadge 18–20% mixes over #fff/#f4f6f9/#eef1f5): min 4.52:1.
+       Dark-scheme tokens above are UNTOUCHED. */
+    --accent: #1450a3; --on-accent: #ffffff;
+    --queued: #4b545f; --running: #70490a; --blocked: #a51f18;
+    --approval: #5b34b8; --unverified: #0a5f78; --verified: #0b5f2c; --deployed: #14572e;
+    --cancelled: #505a64; --default: #4b545f; --seat: #433ca0;
+    --vf-pending: #0a5f78; --vf-unverifiable: #7a5225; --vf-verified: #0b5f2c;
   }
 }
 /* ---- tone family (design F2 / MC 11525 C1b, audit row #17) ----
@@ -57,12 +69,12 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 .skip-link { position: absolute; left: -999px; color: var(--accent); }
-.skip-link:focus { left: 8px; top: 8px; background: var(--accent); color: #06101f; padding: 8px 12px; border-radius: 6px; z-index: 50; } /* same accent/dark pair as .board-pill.is-active, reads in dark AND light */
+.skip-link:focus { left: 8px; top: 8px; background: var(--accent); color: var(--on-accent); padding: 8px 12px; border-radius: 6px; z-index: 50; } /* accent/on-accent pair reads in dark AND light (MC 11525 C2b) */
 
 /* ---- header ---- */
 .topbar { position: sticky; top: 0; z-index: 20; background: var(--bg-2); border-bottom: 1px solid var(--line); }
 .topbar__inner { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 10px 12px; padding-top: calc(10px + env(safe-area-inset-top)); }
-.brand { display: flex; align-items: baseline; gap: 8px; font-weight: 600; }
+.brand { display: flex; align-items: baseline; gap: 8px; font-weight: 600; margin: 0; font-size: 1rem; } /* h1 (MC 11525 C2c, row #12): visually identical to the old div — UA h1 margin/size reset here */
 .brand__mark { color: var(--accent); font-size: 1.2em; }
 .brand__name { font-size: 1.05rem; }
 .brand__phase { color: var(--fg-mut); font-size: .72rem; font-weight: 400; }
@@ -73,20 +85,30 @@ body {
   background: var(--bg-3); color: var(--fg-dim); border-radius: 999px;
   font: inherit; font-weight: 600; cursor: pointer; touch-action: manipulation;
 }
-.board-pill.is-active { background: var(--accent); color: #06101f; border-color: var(--accent); }
+.board-pill.is-active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 
-.tabs { display: flex; gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--line); scrollbar-width: none; }
-.tabs::-webkit-scrollbar { display: none; }
+/* MC 11525 C2g (row #15): the strip WRAPS under the phone width (the 4th tab was
+   clipped mid-word with the scrollbar hidden). flex-wrap keeps every tab label
+   fully visible with its full 44px touch target; overflow-x stays as a fallback
+   for very narrow viewports but no longer has to hide anything. */
+.tabs { display: flex; flex-wrap: wrap; gap: 2px; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--line); }
 .tab {
-  flex: 1 0 auto; min-height: var(--tap); min-width: 92px; padding: 10px 14px;
+  flex: 1 1 auto; min-height: var(--tap); min-width: 92px; padding: 10px 14px;
   border: 0; border-bottom: 3px solid transparent; background: transparent;
   color: var(--fg-dim); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; touch-action: manipulation;
+  text-align: center;
 }
 .tab.is-active { color: var(--fg); border-bottom-color: var(--accent); }
 
 /* ---- layout ---- */
 .page { max-width: 1100px; margin: 0 auto; padding: 12px; }
-.meta-bar { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 8px 2px 12px; color: var(--fg-dim); font-size: .82rem; }
+.meta-bar { display: block; padding: 8px 2px 12px; color: var(--fg-dim); font-size: .82rem; }
+/* MC 11525 C2d (row #13): meta is split into the routinely-changing info line and a
+   status line that is the ONLY aria-live region; the status line holds nothing while
+   all is well (empty = polite region announces nothing, screen readers stay quiet). */
+.meta-bar__info { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.meta-bar__status { margin-top: 4px; }
+.meta-bar__status:empty { display: none; }
 .meta strong { color: var(--fg); }
 .meta--hidden { color: var(--running); }
 .meta--time { margin-left: auto; color: var(--fg-mut); }
@@ -134,7 +156,7 @@ body {
 .project__summary::-webkit-details-marker { display: none; }
 .project__summary::before { content: "▸"; color: var(--fg-mut); margin-right: 2px; }
 .project[open] .project__summary::before { content: "▾"; }
-.project__name { font-weight: 600; font-family: var(--mono); font-size: .86rem; word-break: break-word; flex: 1 1 auto; }
+.project__name { font-weight: 600; font-family: var(--mono); font-size: .86rem; word-break: break-word; flex: 1 1 auto; margin: 0; } /* h2 in the card summary (C2c row #12): UA heading margin reset, size kept as the old span's */
 .project__meta { color: var(--fg-dim); font-size: .78rem; }
 .progress { position: relative; display: inline-flex; align-items: center; width: 100%; max-width: 220px; height: 18px; background: var(--bg-3); border-radius: 999px; overflow: hidden; flex: 1 1 120px; }
 .progress__bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--verified); }
@@ -171,6 +193,9 @@ body {
 .marker--onfail { fill: var(--blocked); }
 .gnode { fill: var(--bg-3); stroke: var(--tone, var(--default)); stroke-width: 1.4; }
 .gnode__t { fill: var(--fg); font-family: var(--mono); font-size: 12px; }
+/* the per-node status letter (C2f row #14) takes the tone colour — the letter
+   itself carries the state even when colour is lost */
+.gnode__status { fill: var(--tone, var(--default)); font-family: var(--mono); font-size: 12px; font-weight: 700; }
 
 .deps { list-style: none; margin: 8px 0 0; padding: 0; }
 .dep { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 8px; border-bottom: 1px solid var(--line); font-size: .82rem; }

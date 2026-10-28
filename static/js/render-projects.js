@@ -33,9 +33,11 @@ function taskNodeHTML(node) {
 function projectCardHTML(name, tasks) {
   var p = data.projectProgress(tasks);
   var roots = data.buildTree(tasks);
+  // the project name is a real <h2> (MC 11525 C2c, row #12: the panel had zero
+  // headings); inside <summary> is valid HTML and keeps the toggle behaviour.
   return '<details class="project" ' + (p.active > 0 && p.pct < 100 ? 'open' : '') + '>' +
     '<summary class="project__summary">' +
-      '<span class="project__name">' + core.escapeHtml(name) + '</span>' +
+      '<h2 class="project__name">' + core.escapeHtml(name) + '</h2>' +
       '<span class="project__meta">' + p.done + '/' + p.active + ' klara' +
         (p.cancelled ? ' · ' + p.cancelled + ' avbrutna' : '') + '</span>' +
       '<span class="progress" role="img" aria-label="' + p.pct + ' procent klart">' +

@@ -13,6 +13,16 @@ var shared = (typeof window !== 'undefined')
 var core = shared || require('./render-core.js');
 var data = shared || require('./render-data.js');
 
+// C2f (row #14): a compact Swedish status letter per tone, so a node's state
+// survives colour-blindness / monochrome. The letter mirrors the Swedish label
+// (K=ko, P=pågår, B=blockerad, G=godkännande, O=overifierad, V=verifierad,
+// D=driftsatt, A=avbruten) and sits beside the node's id; the full id + label
+// is on each node's <title> for AT.
+var STATUS_GLYPH = {
+  queued: 'K', running: 'P', blocked: 'B', approval: 'G', unverified: 'O',
+  verified: 'V', deployed: 'D', cancelled: 'A', default: '?'
+};
+
 function renderDependencies(board) {
   var tasks = (board && board.tasks) || [];
   if (board && board.error) return core.errorHTML('Tavlan kunde inte läsas.');
@@ -34,10 +44,12 @@ function renderDependencies(board) {
   }).join('');
   var counts = { after: 0, onfail: 0 };
   edges.forEach(function (e) { counts[e.kind]++; });
-  return '<p class="dep-legend"><span class="edge edge--after">→ efter</span> ' + counts.after +
+  // the panel gets a real <h2> (C2c row #12) and the graph a Swedish <title> +
+  // aria-describedby onto the legend line (C2f row #14).
+  var legend = '<p class="dep-legend" id="dep-legend"><span class="edge edge--after">→ efter</span> ' + counts.after +
          ' · <span class="edge edge--onfail">⚠ vid fel</span> ' + counts.onfail +
-         ' · totalt ' + edges.length + ' beroendekanter</p>' +
-         svgGraph(tasks, edges) +
+         ' · totalt ' + edges.length + ' beroendekanter</p>';
+  return core.section('Beroenden', legend + svgGraph(tasks, edges)) +
          '<ul class="deps">' + rows + '</ul>';
 }
 
@@ -83,13 +95,20 @@ function svgGraph(tasks, edges) {
   }).join('');
   var boxes = ids.map(function (id) {
     var p = pos[id], t = have[id];
+    // C2f (row #14): status beyond colour — a small per-node status letter (the
+    // tone's first letter is meaningless; use a compact Swedish marker set), the
+    // node box stays as drawn, and every node carries a <title> with id + status.
+    var glyph = STATUS_GLYPH[core.statusTone(t.status)] || '?';
     return '<g transform="translate(' + p.x + ',' + p.y + ')">' +
+      '<title>' + core.escapeHtml(id + ' · ' + core.statusLabel(t.status)) + '</title>' +
       '<rect width="' + NW + '" height="' + NH + '" rx="5" class="gnode gnode--' + core.statusTone(t.status) + '"/>' +
       '<text x="6" y="19" class="gnode__t">' + core.escapeHtml(id) + '</text>' +
+      '<text x="' + (NW - 10) + '" y="19" class="gnode__status" aria-hidden="true">' + glyph + '</text>' +
     '</g>';
   }).join('');
   return '<div class="graph-wrap"><svg class="graph" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H +
-    '" role="img" aria-label="Beroendegraf">' +
+    '" role="img" aria-labelledby="graph-title" aria-describedby="dep-legend">' +
+    '<title id="graph-title">Beroendegraf</title>' +
     '<defs>' +
       '<marker id="arrow-after" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" class="marker--after"/></marker>' +
       '<marker id="arrow-onfail" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" class="marker--onfail"/></marker>' +

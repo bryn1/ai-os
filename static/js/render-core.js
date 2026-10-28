@@ -122,13 +122,15 @@ function errorHTML(msg) { return '<div class="state state--error" role="alert">'
 
 // ---- meta strip + shell states — moved VERBATIM from app.js (Wave C1c, audit
 // row #18): the shell is fetch/poll wiring only, so every string the shell wrote
-// into innerHTML lives here. Outputs are byte-identical (c1-anchor shell writes).
-// board/data may be null (no data yet / unknown board); error wins over the data line.
-function metaHTML(board, data, error) {
-  if (error) {
-    return '<span class="meta meta--error">Kunde inte läsa ögonblicksbilden: ' +
-      escapeHtml(error) + '</span>';
-  }
+// into innerHTML lives here.
+// Wave C2d (audit row #13) split the ONE blob into two builders: the routinely-
+// changing info line (board, counts, timestamp — NO live region; screen readers
+// must not hear it every 60 s) and the status line (the error, the ONLY polite
+// region). The status builder is DETERMINISTIC — same error text -> same string —
+// so app.js can skip re-writing it while it is unchanged (an unchanged polite
+// region re-announcement is the same defect as an aria-live blob).
+// board/data may be null (no data yet / unknown board).
+function metaHTML(board, data) {
   var gen = data && data.generated_at ? new Date(data.generated_at) : null;
   var when = gen ? gen.toLocaleString('sv-SE') : '—';
   var hidden = board ? (board.hidden_count || 0) : 0;
@@ -137,6 +139,12 @@ function metaHTML(board, data, error) {
     '<span class="meta">' + escapeHtml(tasks) + ' jobb</span>' +
     '<span class="meta meta--hidden" title="Känsliga projekt filtrerade på servern">' + escapeHtml(hidden) + ' dolda (känsliga)</span>' +
     '<span class="meta meta--time">Uppdaterad ' + escapeHtml(when) + '</span>';
+}
+// the status line: '' while all is well (empty region = nothing announced).
+function statusHTML(error) {
+  if (!error) return '';
+  return '<span class="meta meta--error">Kunde inte läsa ögonblicksbilden: ' +
+    escapeHtml(error) + '</span>';
 }
 // panel fallback when a renderer throws mid-render (app.js renderPanel catch).
 function renderErrorHTML(detail) {
@@ -151,8 +159,10 @@ var API = {
   // public API — names + arity identical to the pre-split render.js:
   escapeHtml: escapeHtml, statusMeta: statusMeta, statusTone: statusTone, statusLabel: statusLabel,
   isDone: isDone, isProgress: isProgress, verifyState: verifyState,
-  // public API additions — the shell builders Wave C1c moved out of app.js (row #18):
-  metaHTML: metaHTML, errorHTML: errorHTML, renderErrorHTML: renderErrorHTML, loadingHTML: loadingHTML,
+  // public API additions — the shell builders Wave C1c moved out of app.js (row #18),
+  // split info/status by Wave C2d (row #13; metaHTML no longer takes the error):
+  metaHTML: metaHTML, statusHTML: statusHTML,
+  errorHTML: errorHTML, renderErrorHTML: renderErrorHTML, loadingHTML: loadingHTML,
   // seam: shared with the other five concern files, not dashboard API:
   isVerifiable: isVerifiable, VERIFY_LABEL: VERIFY_LABEL, VERIFY_MARK: VERIFY_MARK,
   statusChip: statusChip, seatChip: seatChip, verifyBadge: verifyBadge, edgeChips: edgeChips,
